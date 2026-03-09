@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Medicine Dispenser - Patient Records</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f8e9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
+            max-width: 1100px;
+            margin: auto;
+            margin-top: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #388e3c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #a5d6a7;
+            color: #2e7d32;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #00acc1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00838f;
+        }
+        .logout {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .logout a {
+            color: white;
+            background-color: #e53935;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .logout a:hover {
+            background-color: #c62828;
+        }
+        .refresh-btn {
+            background-color: #4caf50;
+            margin-left: 10px;
+        }
+        .refresh-btn:hover {
+            background-color: #388e3c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logout">
+            <div><strong>Welcome, {{ username }}!</strong></div>
+            <div>
+                <a href="{{ url_for('removed_patients') }}" style="margin-right: 10px;">View Archived Patients</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+                <button class="refresh-btn" onclick="location.reload();">🔄 Refresh Page</button>
+            </div>
+        </div>
+        <h1>Patient Records</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Medicine</th>
+                    <th>Schedule Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td>{{ patient.id }}</td>
+                    <td>{{ patient.name }}</td>
+                    <td>{{ patient.age }}</td>
+                    <td>{{ patient.medicine }}</td>
+                    <td>{{ patient.schedule_time }}</td>
+                    <td>
+                        <!-- Dispense button -->
+                        <form class="dispense-form" id="dispense-{{ patient.id }}" method="post" action="{{ url_for('dispense', patient_id=patient.id) }}" style="display:inline;">
+                            <button type="submit" class="dispense-button" disabled>Dispense</button>
+                        </form>
+
+                        <!-- Archive button -->
+                        <form action="{{ url_for('archive_patient', patient_id=patient.id) }}" method="post" style="display:inline;">
+                            <button type="submit" style="background-color:#e53935;">Archive</button>
+                        </form>
+
+                        <!-- Edit schedule button -->
+                        <form action="{{ url_for('edit_schedule', patient_id=patient.id) }}" method="get" style="display:inline;">
+                            <button type="submit" style="background-color:#fdd835; color:black;">Edit Schedule</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // ✅ Check the schedule every 30 seconds via backend
+        async function checkAlarms() {
+            try {
+                const response = await fetch("{{ url_for('check_alarm') }}");
+                const data = await response.json();
+
+                if (data.triggered_patients && data.triggered_patients.length > 0) {
+                    data.triggered_patients.forEach(patient => {
+                        enableDispenseButton(patient.id);
+                        showHardwareAlarm(patient.name, patient.schedule_time);
+                    });
+                }
+            } catch (err) {
+                console.error("Error checking alarms:", err);
+            }
+        }
+
+        function enableDispenseButton(patientId) {
+            const button = document.querySelector(`#dispense-${patientId} .dispense-button`);
+            if (button) {
+                button.disabled = false;
+                button.style.backgroundColor = "#4caf50";
+                button.textContent = "Dispense Now";
+            }
+        }
+
+        // Popup message when buzzer triggers
+        function showHardwareAlarm(name, time) {
+            if (document.getElementById("alarm-popup")) return;
+
+            // 🔊 Trigger hardware buzzer once
+            fetch("http://localhost:5001/hardware/alarm", { method: "POST" }).catch(console.error);
+
+            const popup = document.createElement('div');
+            popup.id = "alarm-popup";
+            popup.style.position = "fixed";
+            popup.style.top = "0";
+            popup.style.left = "0";
+            popup.style.width = "100%";
+            popup.style.height = "100%";
+            popup.style.background = "rgba(0,0,0,0.6)";
+            popup.style.display = "flex";
+            popup.style.justifyContent = "center";
+            popup.style.alignItems = "center";
+            popup.style.zIndex = "9999";
+
+            popup.innerHTML = `
+                <div style="background:white;padding:25px;border-radius:10px;text-align:center;">
+                    <h2 style="color:red;">⏰ Medicine Time!</h2>
+                    <p>${name} needs to take medicine at ${time}</p>
+                    <button onclick="dismissAlarm()">Dismiss</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function dismissAlarm() {
+            const popup = document.getElementById("alarm-popup");
+            if (popup) popup.remove();
+
+            // Stop hardware buzzer when popup is dismissed
+            fetch("http://localhost:5001/hardware/stop_alarm", { method: "POST" }).catch(console.error);
+        }
+
+        // Run every 30 seconds
+        setInterval(checkAlarms, 30000);
+        // Run immediately at page load
+        window.addEventListener("load", checkAlarms);
+    </script>
+</body>
+</html>

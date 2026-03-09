@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Medicine Dispenser - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #e0f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .logo-top-left {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 80px;
+            height: auto;
+        }
+
+        .login-container {
+            background: rgb(246, 246, 248);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
+            width: 350px;
+            text-align: center;
+        }
+
+        .app-title {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+            color: #333;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 95%;
+            padding: 10px;
+            background-color: #00acc1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00838f;
+        }
+        .link {
+            margin-top: 15px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='logo.png') }}" class="logo-top-left">
+    <div class="login-container">
+        <h1 class="app-title">YACAPSULE</h1>
+        <h2>Login</h2>
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+        </form>
+        <a href="/register" class="link">Don't have an account? Register here</a>
+    </div>
+</body>
+</html>

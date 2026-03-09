@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Patient Schedule</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f1f8e9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            max-width: 500px;
+            margin: 80px auto;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2e7d32;
+            margin-bottom: 30px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="time"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #43a047;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #388e3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Edit Schedule for {{ patient.name }}</h2>
+        <form method="POST">
+            <label for="new_schedule_time">Select New Schedule Time:</label>
+            <input type="time" id="new_schedule_time" name="new_schedule_time"
+       value="{{ schedule_time.strftime('%H:%M:%S') if schedule_time else '' }}" required>
+            <button type="submit">Save Schedule</button>
+        </form>
+    </div>
+</body>
+</html>
