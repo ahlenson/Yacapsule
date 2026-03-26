@@ -227,10 +227,11 @@ def restore_patient(patient_id):
 triggered = False  # Add a flag to track if the alarm was triggered
 @app.route('/check_alarm')
 def check_alarm():
-    global triggered  # Use the global flag to track the state
+    global triggered
     if 'user_id' not in session:
         return jsonify(triggered_patients=[])
-    current_time = getCurrentTimePH()  # This is your current time in 'HH:MM' format
+    
+    current_time = getCurrentTimePH()  # HH:MM
     connection = create_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("""
@@ -239,17 +240,18 @@ def check_alarm():
     patients = cursor.fetchall()
     cursor.close()
     connection.close()
+    
     triggered_patients = []
     for row in patients:
         schedule_time = row['schedule_time']
         formatted_schedule_time = None
-        # Check if the schedule_time is a timedelta object
         if isinstance(schedule_time, datetime.timedelta):
             hours, remainder = divmod(schedule_time.seconds, 3600)
             minutes = remainder // 60
             formatted_schedule_time = f"{hours:02}:{minutes:02}"
-        elif isinstance(schedule_time, str):  # Assuming the schedule_time is a string like 'HH:MM'
+        elif isinstance(schedule_time, str):
             formatted_schedule_time = schedule_time[:5]
+
         if formatted_schedule_time and formatted_schedule_time == current_time and not triggered:
             triggered_patients.append({
                 'id': row['id'],
@@ -257,11 +259,12 @@ def check_alarm():
                 'schedule_time': formatted_schedule_time
             })
             try:
-                # Send request to trigger the alarm
-                requests.post("http://localhost:5001/hardware/alarm")
-                triggered = True  # Set the flag so it doesn't trigger again
+                # Trigger hardware to start physical buzzer and enable RFID
+                requests.post("http://localhost:5001/hardware/start_alarm")
+                triggered = True  # prevent multiple triggers
             except Exception as e:
                 print(f"Failed to trigger alarm: {e}")
+    
     return jsonify(triggered_patients=triggered_patients)
 
 if __name__ == '__main__':
