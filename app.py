@@ -2,10 +2,14 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 import mysql.connector
 import requests
 import datetime
-import pytz  # Import pytz for handling time zones
+import pytz
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
+
+# Track triggered events to prevent spamming the hardware. 
+# Format: {(patient_id, 'YYYY-MM-DD')}
+triggered_events = set()
 
 def create_connection():
     try:
@@ -53,11 +57,10 @@ def ensure_tables():
     cur.close()
     conn.close()
 
-# Function to get the current time in the Philippines
-def getCurrentTimePH():
-    philippines_tz = pytz.timezone('Asia/Manila')  # Set the Philippines time zone
-    now = datetime.datetime.now(philippines_tz)    # Get current time in PH time zone
-    return now.strftime('%H:%M')                    # Format as 'HH:MM'
+# Function to get the full datetime object in PH time
+def get_ph_time():
+    philippines_tz = pytz.timezone('Asia/Manila')
+    return datetime.datetime.now(philippines_tz)
 
 # ---------- ROUTES ----------
 @app.route('/')
@@ -139,6 +142,13 @@ def edit_schedule(patient_id):
             conn.commit()
             cur.close()
             conn.close()
+            
+            # Remove from triggered events so it can trigger again today if edited to a new time
+            now = get_ph_time()
+            current_date_str = now.strftime('%Y-%m-%d')
+            global triggered_events
+            triggered_events.discard((patient_id, current_date_str))
+
             return redirect(url_for('patients'))
         except Exception as e:
             cur.close()
@@ -156,16 +166,7 @@ def edit_schedule(patient_id):
 def dispense(patient_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    try:
-        # Send request to stop the buzzer
-        requests.post("http://localhost:5001/hardware/stop_alarm")
-        # Continue with the dispensing logic
-        r = requests.post("http://localhost:5001/hardware/dispense", timeout=5)
-        if r.ok and r.json().get('success') is True:
-            return render_template('success_dispense.html', patient_id=patient_id)
-        return "Dispensing error", 400
-    except Exception as e:
-        return f"Hardware call failed: {e}", 500
+    return render_template('success_dispense.html', patient_id=patient_id)
 
 @app.route('/archive/<int:patient_id>', methods=['POST'])
 def archive_patient(patient_id):
@@ -223,48 +224,79 @@ def restore_patient(patient_id):
     conn.close()
     return redirect(url_for('removed_patients'))
 
-# Alarm logic
-triggered = False  # Add a flag to track if the alarm was triggered
+
 @app.route('/check_alarm')
 def check_alarm():
-    global triggered
+    global triggered_events
+
     if 'user_id' not in session:
         return jsonify(triggered_patients=[])
-    
-    current_time = getCurrentTimePH()  # HH:MM
+
+    now = get_ph_time()
+    current_date_str = now.strftime('%Y-%m-%d')
+    # Strip seconds for accurate minute-level comparison
+    current_time_obj = now.replace(second=0, microsecond=0) 
+
     connection = create_connection()
+    if not connection:
+        return jsonify(triggered_patients=[])
+    
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT id, name, schedule_time FROM patient_records WHERE schedule_time IS NOT NULL
-    """)
+    cursor.execute("SELECT id, name, schedule_time FROM patient_records WHERE schedule_time IS NOT NULL")
     patients = cursor.fetchall()
     cursor.close()
     connection.close()
-    
-    triggered_patients = []
-    for row in patients:
-        schedule_time = row['schedule_time']
-        formatted_schedule_time = None
-        if isinstance(schedule_time, datetime.timedelta):
-            hours, remainder = divmod(schedule_time.seconds, 3600)
-            minutes = remainder // 60
-            formatted_schedule_time = f"{hours:02}:{minutes:02}"
-        elif isinstance(schedule_time, str):
-            formatted_schedule_time = schedule_time[:5]
 
-        if formatted_schedule_time and formatted_schedule_time == current_time and not triggered:
-            triggered_patients.append({
-                'id': row['id'],
-                'name': row['name'],
-                'schedule_time': formatted_schedule_time
-            })
-            try:
-                # Trigger hardware to start physical buzzer and enable RFID
-                requests.post("http://localhost:5001/hardware/start_alarm")
-                triggered = True  # prevent multiple triggers
-            except Exception as e:
-                print(f"Failed to trigger alarm: {e}")
-    
+    triggered_patients = []
+
+    for row in patients:
+        raw_time = str(row['schedule_time']).strip()
+        if not raw_time:
+            continue
+
+        try:
+            # Handle both formats seamlessly (HH:MM vs HH:MM:SS)
+            if len(raw_time) == 5:
+                t = datetime.datetime.strptime(raw_time, "%H:%M")
+            else:
+                t = datetime.datetime.strptime(raw_time, "%H:%M:%S")
+            
+            # Map database schedule to today's date
+            sched_time_obj = now.replace(hour=t.hour, minute=t.minute, second=0, microsecond=0)
+            
+            # Calculate difference in minutes
+            diff_minutes = (current_time_obj - sched_time_obj).total_seconds() / 60.0
+
+            # Tolerant triggering: if current time is exactly on, or up to 5 minutes AFTER schedule
+            if 0 <= diff_minutes <= 5:
+                event_key = (row['id'], current_date_str)
+                
+                if event_key not in triggered_events:
+                    triggered_patients.append({
+                        'id': row['id'],
+                        'name': row['name'],
+                        'schedule_time': t.strftime("%H:%M")
+                    })
+                    triggered_events.add(event_key)
+
+        except Exception as e:
+            print(f"Time parse error for {row['name']}: {raw_time} | Error: {e}")
+
+    # Process hardware triggers only if we found new valid alarms
+    if triggered_patients:
+        try:
+            print("Sending patients to hardware:", triggered_patients)
+            requests.post(
+                "http://localhost:5001/hardware/start_alarm",
+                json={"patients": triggered_patients},
+                timeout=5
+            )
+        except Exception as e:
+            print("Hardware error:", e)
+            # If the hardware server is down, remove from triggered_events so it tries again next loop!
+            for p in triggered_patients:
+                triggered_events.discard((p['id'], current_date_str))
+
     return jsonify(triggered_patients=triggered_patients)
 
 if __name__ == '__main__':
