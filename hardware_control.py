@@ -1,9 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import RPi.GPIO as GPIO
 from mfrc522 import MFRC522
 import threading
 import time
+from collections import deque
 
 app = Flask(__name__)
 CORS(app)
@@ -28,7 +29,10 @@ GPIO.output(buzzer_pin, False)
 # RFID
 reader = MFRC522()
 AUTHORIZED_CARD = 384939185137
-rfid_active = False
+
+patient_queue = deque()
+rfid_active = False 
+processing = False
 
 # ----------------------------
 # Servo Functions
@@ -51,67 +55,93 @@ def dispense_medicine():
 # RFID Thread
 # ----------------------------
 def rfid_loop():
-    global rfid_active
-    print("RFID scanner ready (inactive until alarm)")
+    global rfid_active, patient_queue, processing
+    print("RFID scanner ready...")
+
     while True:
+        if not rfid_active:
+            time.sleep(0.5)
+            continue
+
         (status, TagType) = reader.MFRC522_Request(reader.PICC_REQIDL)
+
         if status == reader.MI_OK:
             (status, uid) = reader.MFRC522_Anticoll()
+
             if status == reader.MI_OK:
                 card_id = int("".join([str(i) for i in uid]))
-                if rfid_active:
-                    if card_id == AUTHORIZED_CARD:
-                        print("Access Granted")
+
+                if card_id == AUTHORIZED_CARD:
+                    print("Access Granted")
+
+                    if patient_queue:
+                        patient = patient_queue.popleft()
+                        print("Dispensing for:", patient['name'])
+
                         dispense_medicine()
-                        time.sleep(2)
+
+                        print("Remaining queue:", len(patient_queue))
+
+                        # If queue empty → stop system
+                        if not patient_queue:
+                            print("Queue finished. Stopping system.")
+                            GPIO.output(buzzer_pin, False)
+                            rfid_active = False
+                            processing = False
                     else:
-                        print("Access Denied")
-                        time.sleep(1)
+                        print("Queue empty already")
                 else:
-                    time.sleep(0.1)
+                    print("Access Denied")
+                    
+                time.sleep(2) # Cooldown to prevent spam reading the same card
+
         time.sleep(0.1)
 
-# Start RFID scanning in background
-threading.Thread(target=rfid_loop, daemon=True).start()
-
 # ----------------------------
-# Flask Routes
+# Routes
 # ----------------------------
 @app.route('/')
-def index():
-    return "Hardware Control API Running"
+def home():
+    return "Hardware server is running"
 
 @app.route('/hardware/start_alarm', methods=['POST'])
 def api_start_alarm():
-    global rfid_active
+    global rfid_active, patient_queue, processing
+
     try:
-        print("ALARM ON: Physical buzzer active, RFID enabled")
+        data = request.get_json()
+        patients = data.get("patients", [])
+
+        if not patients:
+            return jsonify({'success': False, 'message': 'No patients received'})
+
+        print("Received patients:", patients)
+
+        # Add to FIFO queue
+        for p in patients:
+            patient_queue.append(p)
+
+        print("Queue size:", len(patient_queue))
+
+        # Activate system
         rfid_active = True
+        processing = True
         GPIO.output(buzzer_pin, True)
-        time.sleep(5)  # buzzer duration
-        GPIO.output(buzzer_pin, False)
-        rfid_active = False
-        print("ALARM OFF: RFID disabled")
-        return jsonify({'success': True, 'message': 'Buzzer triggered and RFID active'})
+
+        return jsonify({'success': True, 'queue_length': len(patient_queue)})
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/hardware/dispense', methods=['POST'])
-def api_dispense():
-    success = dispense_medicine()
-    return jsonify({'success': success})
-
-@app.route('/hardware/stop_alarm', methods=['POST'])
-def api_stop_alarm():
-    GPIO.output(buzzer_pin, False)
-    return jsonify({'success': True, 'message': 'Buzzer stopped'})
 
 # ----------------------------
 # Run Flask
 # ----------------------------
 if __name__ == '__main__':
     try:
-        app.run(host='0.0.0.0', port=5001, debug=True)
+        # Daemon thread closes automatically when the main program stops
+        threading.Thread(target=rfid_loop, daemon=True).start()
+        # use_reloader=False prevents Flask from running twice and crashing the GPIO threading
+        app.run(host='0.0.0.0', port=5001, debug=True, use_reloader=False)
     finally:
         pwm_servo.stop()
         GPIO.cleanup()
