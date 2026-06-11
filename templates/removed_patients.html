@@ -3,93 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <title>Archived Patients</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #ffe0b2;
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
             margin: 0;
-            padding: 20px;
+            padding: 40px;
+            color: #0f172a;
         }
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
             max-width: 1100px;
             margin: auto;
-            margin-top: 30px;
         }
-        h1 {
-            text-align: center;
-            color: #ef6c00;
+        h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; }
+        
+        .table-card {
+            background: white;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: center;
-        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 1rem 1.5rem; font-size: 0.925rem; }
         th {
-            background-color: #ffcc80;
-            color: #ef6c00;
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #e2e8f0;
         }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        button {
-            padding: 8px 16px;
-            background-color: #43a047;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        td { border-bottom: 1px solid #e2e8f0; color: #334155; }
+        tr:last-child td { border-bottom: none; }
+        
+        button, .btn {
+            font-family: 'Inter', sans-serif;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #0f172a;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.2s ease;
         }
-        button:hover {
-            background-color: #2e7d32;
+        button:hover, .btn:hover { background-color: #f8fafc; border-color: #cbd5e1; }
+        
+        .restore-btn {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border-color: #bbf7d0;
         }
-        .action-btns {
-            display: flex;
-            justify-content: center;
-        }
+        .restore-btn:hover { background-color: #dcfce7; }
+        
+        .footer-actions { margin-top: 1.5rem; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Archived Patients</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Age</th>
-                    <th>Medicine</th>
-                    <th>Schedule Time</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for patient in patients %}
-                <tr>
-                    <td>{{ patient.id }}</td>
-                    <td>{{ patient.name }}</td>
-                    <td>{{ patient.age }}</td>
-                    <td>{{ patient.medicine }}</td>
-                    <td>{{ patient.schedule_time }}</td>
-                    <td class="action-btns">
-                        <form action="/restore_patient/{{ patient.id }}" method="post">
-                            <button type="submit">Restore</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="action-btns">
-            <a href="/patients"><button>Back to Patient List</button></a>
+        <h1>Archived Patient Directory</h1>
+        
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Medicine</th>
+                        <th>Schedule Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td style="font-weight: 600; color: #64748b;">#{{ patient.id }}</td>
+                        <td style="font-weight: 500;">{{ patient.name }}</td>
+                        <td>{{ patient.age }} yrs old</td>
+                        <td>{{ patient.medicine }}</td>
+                        <td>{{ patient.schedule_time }}</td>
+                        <td>
+                            <form action="/restore_patient/{{ patient.id }}" method="post" style="margin:0;">
+                                <button type="submit" class="restore-btn">Restore System Record</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer-actions">
+            <a href="/patients" class="btn">← Back to Patient List</a>
         </div>
     </div>
 </body>
