@@ -2,195 +2,315 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Medicine Dispenser - Patient Records</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yacapsule - Patient Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --border: #e2e8f0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f1f8e9;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
-            max-width: 1100px;
-            margin: auto;
-            margin-top: 30px;
-        }
-        h1 {
-            text-align: center;
-            color: #388e3c;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: center;
-        }
-        th {
-            background-color: #a5d6a7;
-            color: #2e7d32;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        button {
-            padding: 8px 16px;
-            background-color: #00acc1;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #00838f;
-        }
-        .logout {
+
+        /* Top Navigation Bar Layout */
+        .navbar {
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 70px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .logout a {
-            color: white;
-            background-color: #e53935;
-            padding: 8px 16px;
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            color: var(--text-main);
             text-decoration: none;
-            border-radius: 5px;
+            display: flex;
+            align-items: center;
         }
-        .logout a:hover {
-            background-color: #c62828;
+
+        .brand-logo span {
+            color: var(--primary);
         }
-        .refresh-btn {
-            background-color: #4caf50;
-            margin-left: 10px;
+
+        .user-tag {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: #f1f5f9;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
         }
-        .refresh-btn:hover {
-            background-color: #388e3c;
+
+        .nav-actions-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Modernized Buttons */
+        .btn {
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-secondary { background-color: var(--surface); color: var(--text-main); border-color: var(--border); }
+        .btn-secondary:hover { background-color: #f8fafc; border-color: #cbd5e1; }
+
+        .btn-warning { background-color: var(--warning); color: white; }
+        .btn-warning:hover { background-color: var(--warning-hover); }
+
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: var(--danger-hover); }
+
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { background-color: var(--success-hover); }
+
+        /* Main Content Grid */
+        .main-container {
+            max-width: 1300px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        /* Clean Card Design for Tables */
+        .table-card {
+            background-color: var(--surface);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.925rem;
+            color: #334155;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .table-actions .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="logout">
-            <div><strong>Welcome, {{ username }}!</strong></div>
-            <div>
-                <a href="{{ url_for('removed_patients') }}" style="margin-right: 10px;">View Archived Patients</a>
-                <a href="{{ url_for('logout') }}">Logout</a>
-                <button class="refresh-btn" onclick="location.reload();">🔄 Refresh Page</button>
-            </div>
+    <header class="navbar">
+        <div class="brand-container">
+            <a href="#" class="brand-logo">Ya<span>capsule</span></a>
+            <div class="user-tag">Staff: {{ username }}</div>
         </div>
-        <h1>Patient Records</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Age</th>
-                    <th>Medicine</th>
-                    <th>Schedule Time</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for patient in patients %}
-                <tr>
-                    <td>{{ patient.id }}</td>
-                    <td>{{ patient.name }}</td>
-                    <td>{{ patient.age }}</td>
-                    <td>{{ patient.medicine }}</td>
-                    <td>{{ patient.schedule_time }}</td>
-                    <td>
-                        <form class="dispense-form" id="dispense-{{ patient.id }}" method="post" action="{{ url_for('dispense', patient_id=patient.id) }}" style="display:inline;">
-                            <button type="button" class="dispense-button" disabled style="opacity:0.5;"> RFID Only</button>
-                        </form>
+        <nav class="nav-actions-right">
+            <a href="{{ url_for('inventory') }}" class="btn btn-secondary">📋 View Live Inventory</a>
+            <a href="{{ url_for('removed_patients') }}" class="btn btn-secondary">📁 View Archived Patients</a>
+            <button id="save-logs-btn" class="btn btn-warning">📤 Save Logs to Sheets</button>
+            <button class="btn btn-success" onclick="location.reload();">🔄 Refresh Page</button>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">🚪 Logout</a>
+        </nav>
+    </header>
 
-                        <form action="{{ url_for('archive_patient', patient_id=patient.id) }}" method="post" style="display:inline;">
-                            <button type="submit" style="background-color:#e53935;">Archive</button>
-                        </form>
+    <main class="main-container">
+        <div class="page-header">
+            <h1>Patient Dispatch Records</h1>
+        </div>
 
-                        <form action="{{ url_for('edit_schedule', patient_id=patient.id) }}" method="get" style="display:inline;">
-                            <button type="submit" style="background-color:#fdd835; color:black;">Edit Schedule</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Medicine</th>
+                        <th>Schedule Time</th>
+                        <th>Action Management</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--text-muted);">#{{ patient.id }}</td>
+                        <td style="font-weight: 500;">{{ patient.name }}</td>
+                        <td>{{ patient.age }} yrs old</td>
+                        <td><span style="background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 500; font-size: 0.85rem;">{{ patient.medicine }}</span></td>
+                        <td style="font-weight: 500; color: #475569;">⏰ {{ patient.schedule_time }}</td>
+                        <td>
+                            <div class="table-actions">
+                                <form class="dispense-form" id="dispense-{{ patient.id }}" method="post" action="{{ url_for('dispense', patient_id=patient.id) }}" style="display:inline;">
+                                    <button type="button" class="dispense-button btn btn-secondary" disabled style="opacity:0.5; cursor: not-allowed;">RFID Listening</button>
+                                </form>
+
+                                <form action="{{ url_for('archive_patient', patient_id=patient.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger" style="background-color: #fee2e2; color: var(--danger); border: 1px solid #fca5a5;">Archive</button>
+                                </form>
+
+                                <form action="{{ url_for('edit_schedule', patient_id=patient.id) }}" method="get" style="display:inline;">
+                                    <button type="submit" class="btn btn-secondary">Edit Schedule</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
 
     <script>
-        // Check the schedule every 30 seconds via backend
         async function checkAlarms() {
             try {
                 const response = await fetch("{{ url_for('check_alarm') }}");
-                if (!response.ok) return; // Prevent console errors if server is restarting
-                
+                if (!response.ok) return;
                 const data = await response.json();
 
                 if (data.triggered_patients && data.triggered_patients.length > 0) {
                     data.triggered_patients.forEach(patient => {
                         enableDispenseButton(patient.id);
-                        showHardwareAlarm(patient.name, patient.schedule_time);
+                        showHardwareAlarmPopup(patient.name, patient.schedule_time);
                     });
                 }
-            } catch (err) {
-                // Silently ignore fetch errors in case the Raspberry Pi drops connection briefly
-            }
+            } catch (err) {}
         }
 
         function enableDispenseButton(patientId) {
             const button = document.querySelector(`#dispense-${patientId} .dispense-button`);
             if (button) {
                 button.disabled = false;
-                button.style.backgroundColor = "#4caf50";
-                button.textContent = "Dispense Now";
+                button.style.opacity = "1";
+                button.style.cursor = "pointer";
+                button.style.backgroundColor = "var(--success)";
+                button.style.color = "white";
+                button.style.borderColor = "transparent";
+                button.textContent = "Dispense on RFID";
             }
         }
 
-        // Popup message when buzzer triggers
-        function showHardwareAlarm(name, time) {
-            if (document.getElementById(`alarm-popup-${name}`)) return; // Prevent duplicate popups per patient
+        function showHardwareAlarmPopup(name, time) {
+            const popupId = `alarm-popup-${name}`;
+            if (document.getElementById(popupId)) return;
 
             const popup = document.createElement('div');
-            popup.id = `alarm-popup-${name}`;
+            popup.id = popupId;
             popup.style.position = "fixed";
             popup.style.top = "0";
             popup.style.left = "0";
             popup.style.width = "100%";
             popup.style.height = "100%";
-            popup.style.background = "rgba(0,0,0,0.6)";
+            popup.style.background = "rgba(15, 23, 42, 0.6)";
+            popup.style.backdropFilter = "blur(4px)";
             popup.style.display = "flex";
             popup.style.justifyContent = "center";
             popup.style.alignItems = "center";
             popup.style.zIndex = "9999";
 
             popup.innerHTML = `
-                <div style="background:white;padding:25px;border-radius:10px;text-align:center;">
-                    <h2 style="color:red;">⏰ Medicine Time!</h2>
-                    <p>${name} needs to take medicine at ${time}</p>
-                    <button onclick="dismissAlarm('${name}')">Dismiss</button>
+                <div style="background: white; padding: 2.5rem; border-radius: 1rem; text-align: center; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⏰</div>
+                    <h2 style="color: var(--danger); margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700;">Medicine Time Alert!</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">It is now scheduled for <strong>${name}</strong> to take their medication at <strong>${time}</strong>.</p>
+                    <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;" onclick="dismissAlarmPopup('${name}')">Acknowledge & Dismiss</button>
                 </div>
             `;
             document.body.appendChild(popup);
         }
 
-        function dismissAlarm(name) {
+        function dismissAlarmPopup(name) {
             const popup = document.getElementById(`alarm-popup-${name}`);
             if (popup) popup.remove();
         }
 
-        // Run every 30 seconds
         setInterval(checkAlarms, 30000);
-        // Run immediately at page load
-        window.addEventListener("load", checkAlarms);
+        window.addEventListener('DOMContentLoaded', checkAlarms);
     </script>
 </body>
 </html>
